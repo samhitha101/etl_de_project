@@ -19,7 +19,7 @@ PYSPARK_URI = f'gs://{BUCKET}/scripts/wordcount_by_date.py'
 
 CLUSTER_GENERATOR_CONFIG = ClusterGenerator(
             project_id=PROJECT_ID,
-            zone="asia-southeast1-a",
+            zone="asia-southeast1-c",
             master_machine_type="n1-standard-4",
             master_disk_size=500,
             num_masters=1,
@@ -146,13 +146,13 @@ def reddit_pipeline_template(
             }
         )
         # task will marked as 'success' if cluster exists
-        create_cluster_operator_task = DataprocCreateClusterOperator(
-            task_id='create_dataproc_cluster',
-            cluster_name="de-spark-cluster",
-            project_id=PROJECT_ID,
-            region="asia-southeast1",
-            cluster_config=CLUSTER_GENERATOR_CONFIG
-        )
+        # create_cluster_operator_task = DataprocCreateClusterOperator(
+        #     task_id='create_dataproc_cluster',
+        #     cluster_name="de-spark-cluster",
+        #     project_id=PROJECT_ID,
+        #     region="asia-southeast1",
+        #     cluster_config=CLUSTER_GENERATOR_CONFIG
+        # )
 
         QUERY_DELETE_WORDCOUNT_ROWS = '''
         DELETE {{ BIGQUERY_DATASET }}.{{ subreddit }}_{{ mode }}_wordcount
@@ -172,7 +172,7 @@ def reddit_pipeline_template(
         
         pyspark_job = {
             "reference": {"project_id": PROJECT_ID},
-            "placement": {"cluster_name": 'de-spark-cluster'},
+            "placement": {"cluster_name": 'cluster-d4de'},
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
                 "jar_file_uris": ["gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar"],
@@ -198,7 +198,7 @@ def reddit_pipeline_template(
 
         download_data_task >> json_to_csv_task >> csv_to_parquet_task >> load_to_gcs_task >> [delete_local_json_csv, create_BQ_external_table_task]
         create_BQ_external_table_task >> BQ_create_partitioned_table_task
-        load_to_gcs_task >> create_wordcount_table_task >> create_cluster_operator_task >> delete_wordcountdup_task >> wordcount_sparksubmit_task
+        load_to_gcs_task >> create_wordcount_table_task >> delete_wordcountdup_task >> wordcount_sparksubmit_task
 
 default_args = {
     "owner": "Samhitha",
